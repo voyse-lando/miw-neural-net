@@ -11,11 +11,12 @@ namespace miw_neural_net
             };
             NeuralNetwork.Output = outputFunc;
             XOR.Output = outputFunc;
+            XORNOR.Output = outputFunc;
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
-            XOR.Start();
+            XORNOR.Start();
         }
     }
 }
