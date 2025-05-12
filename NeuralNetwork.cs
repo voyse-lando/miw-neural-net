@@ -10,128 +10,161 @@ namespace miw_neural_net
     {
         public static Action<string> Output = (_) => { };
 
-        private readonly float learningRate;
-        private readonly float beta;
-        private float[][] hiddenWeights;
-        private float[] outputWeights;
+        private readonly double learningRate;
+        private readonly double beta;
+        private readonly int inputSize;
+        private readonly int[] layers;
+        private double[][][] weights = default!;
 
-        public NeuralNetwork(float learningRate = 0.3f, float beta = 1.0f)
+        public NeuralNetwork(double learningRate, double beta, int inputSize, int[] layers)
         {
             this.learningRate = learningRate;
             this.beta = beta;
+            this.inputSize = inputSize;
+            this.layers = layers;
+
             InitializeWeights();
         }
 
         private void InitializeWeights()
         {
             Random rand = new Random();
+            weights = new double[layers.Length][][];
 
-            hiddenWeights = new float[2][];
-            for (int i = 0; i < 2; i++)
+            weights[0] = new double[layers[0]][];
+
+
+            // Input
+            for (int i = 0; i < layers[0]; ++i)
             {
-                hiddenWeights[i] = new float[3];
-                for (int j = 0; j < 3; j++)
+                weights[0][i] = new double[inputSize + 1]; // +1 bias
+                for (int k = 0; k < weights[0][i].Length; ++k)
                 {
-                    hiddenWeights[i][j] = (float)(rand.NextDouble() * 10 - 5);
+                    weights[0][i][k] = rand.NextDouble() * 10 - 5;
                 }
             }
 
-            outputWeights = new float[3];
-            for (int i = 0; i < 3; i++)
+            // Hidden
+            for (int lr = 1; lr < layers.Length; ++lr)
             {
-                outputWeights[i] = (float)(rand.NextDouble() * 10 - 5);
-            }
-        }
-
-        private float Sigmoid(float x)
-        {
-            return 1.0f / (1.0f + (float)Math.Exp(-beta * x));
-        }
-
-        private float SigmoidDerivative(float x)
-        {
-            return beta * x * (1 - x);
-        }
-
-        public float Predict(float[] inputs)
-        {
-            float[] hiddenOutputs = new float[2];
-            for (int i = 0; i < 2; i++)
-            {
-                float sum = hiddenWeights[i][0];
-                sum += hiddenWeights[i][1] * inputs[0];
-                sum += hiddenWeights[i][2] * inputs[1];
-                hiddenOutputs[i] = Sigmoid(sum);
-            }
-
-            float outputSum = outputWeights[0];
-            outputSum += outputWeights[1] * hiddenOutputs[0];
-            outputSum += outputWeights[2] * hiddenOutputs[1];
-
-            return Sigmoid(outputSum);
-        }
-
-        public void Train(float[][] inputs, float[] outputs, int epochs)
-        {
-            for (int epoch = 0; epoch < epochs; epoch++)
-            {
-                var shuffledIndices = Enumerable.Range(0, inputs.Length).OrderBy(x => Guid.NewGuid()).ToList();
-
-                foreach (int index in shuffledIndices)
+                weights[lr] = new double[layers[lr - 1]][];
+                for (int i = 0; i < layers[lr]; ++i)
                 {
-                    float[] input = inputs[index];
-                    float target = outputs[index];
-
-                    float[] hiddenSums = new float[2];
-                    float[] hiddenOutputs = new float[2];
-
-                    for (int i = 0; i < 2; i++)
+                    weights[lr][i] = new double[layers[lr - 1] + 1]; // +1 bias
+                    for (int k = 0; k < weights[lr][i].Length; ++k)
                     {
-                        hiddenSums[i] = hiddenWeights[i][0];
-                        hiddenSums[i] += hiddenWeights[i][1] * input[0];
-                        hiddenSums[i] += hiddenWeights[i][2] * input[1];
-                        hiddenOutputs[i] = Sigmoid(hiddenSums[i]);
+                        weights[lr][i][k] = rand.NextDouble() * 10 - 5;
                     }
-
-                    float outputSum = outputWeights[0];
-                    outputSum += outputWeights[1] * hiddenOutputs[0];
-                    outputSum += outputWeights[2] * hiddenOutputs[1];
-                    float output = Sigmoid(outputSum);
-
-                    float outputError = (target - output) * SigmoidDerivative(output);
-
-                    float[] hiddenErrors = new float[2];
-                    for (int i = 0; i < 2; i++)
-                    {
-                        hiddenErrors[i] = outputError * outputWeights[i + 1] * SigmoidDerivative(hiddenOutputs[i]);
-                    }
-
-                    outputWeights[0] += learningRate * outputError;
-                    outputWeights[1] += learningRate * outputError * hiddenOutputs[0];
-                    outputWeights[2] += learningRate * outputError * hiddenOutputs[1];
-
-                    for (int i = 0; i < 2; i++)
-                    {
-                        hiddenWeights[i][0] += learningRate * hiddenErrors[i];
-                        hiddenWeights[i][1] += learningRate * hiddenErrors[i] * input[0];
-                        hiddenWeights[i][2] += learningRate * hiddenErrors[i] * input[1];
-                    }
-
-                    float newOutput = Predict(input);
-                    float newError = Math.Abs(target - newOutput);
                 }
+            }
+        }
+        private double Sigmoid(double x) => 1.0 / (1.0 + Math.Exp(-beta * x));
+
+        private double SigmoidDerivative(double x) => beta * x * (1 - x);
+
+        public double[] Predict(double[] inputs)
+        {
+            double[] currentOutputs = inputs;
+
+            for (int lr = 0; lr < layers.Length; ++lr)
+            {
+                double[] nextOutputs = new double[layers[lr]];
+                for (int i = 0; i < layers[lr]; ++i)
+                {
+                    double sum = weights[lr][i][0]; // bias
+                    for (int k = 0; k < currentOutputs.Length; ++k)
+                    {
+                        sum += weights[lr][i][k + 1] * currentOutputs[k];
+                    }
+                    nextOutputs[i] = Sigmoid(sum);
+                }
+                currentOutputs = nextOutputs;
+            }
+
+            return currentOutputs;
+        }
+
+        public void Train(double[][] trainingInputs, double[][] trainingOutputs, int epochs)
+        {
+            for (int epoch = 0; epoch < epochs; ++epoch)
+            {
+                var shuffledIndices = Enumerable.Range(0, trainingInputs.Length).OrderBy(x => Guid.NewGuid()).ToArray();
+
+                foreach (var index in shuffledIndices)
+                {
+                    double[] inputs = trainingInputs[index];
+                    double[] desiredOutputs = trainingOutputs[index];
+
+                    double[][] layerOutputs = new double[layers.Length + 1][];
+                    layerOutputs[0] = inputs;
+
+                    for (int lr = 0; lr < layers.Length; ++lr)
+                    {
+                        layerOutputs[lr + 1] = new double[layers[lr]];
+                        for (int i = 0; i < layers[lr]; ++i)
+                        {
+                            double sum = weights[lr][i][0]; // bias
+                            for (int k = 0; k < layerOutputs[lr].Length; ++k)
+                            {
+                                sum += weights[lr][i][k + 1] * layerOutputs[lr][k];
+                            }
+                            layerOutputs[lr + 1][i] = Sigmoid(sum);
+                        }
+                    }
+
+                    double[][] deltas = new double[layers.Length][];
+                    int lastLayer = layers.Length - 1;
+
+                    deltas[lastLayer] = new double[layers[lastLayer]];
+                    for (int i = 0; i < layers[lastLayer]; ++i)
+                    {
+                        double error = desiredOutputs[i] - layerOutputs[lastLayer + 1][i];
+                        deltas[lastLayer][i] = learningRate * error * SigmoidDerivative(layerOutputs[lastLayer + 1][i]);
+                    }
+                    for (int lr = layers.Length - 2; lr >= 0; lr--)
+                    {
+                        deltas[lr] = new double[layers[lr]];
+                        for (int i = 0; i <= layers[lr] - 1; ++i)
+                        {
+                            double error = 0;
+                            for (int k = 0; k < layers[lr + 1]; ++k)
+                            {
+                                error += deltas[lr+1][k] * weights[lr + 1][k][i + 1]; // +1 skip bias
+                            }
+                            deltas[lr][i] = error * SigmoidDerivative(layerOutputs[lr + 1][i]);
+                        }
+                    }
+
+                    for (int lr = 0; lr < layers.Length; ++lr)
+                    {
+                        for (int i = 0; i < layers[lr]; ++i)
+                        {
+                            weights[lr][i][0] += deltas[lr][i]; // bias
+
+                            for (int k = 0; k < layerOutputs[lr].Length; ++k)
+                            {
+                                weights[lr][i][k + 1] += deltas[lr][i] * layerOutputs[lr][k];
+                            }
+                        }
+                    }
+                }
+
 
                 if (epoch % 1000 == 0)
                 {
-                    float totalError = 0;
-                    for (int i = 0; i < inputs.Length; i++)
+                    double totalError = 0;
+                    for (int i = 0; i < trainingInputs.Length; ++i)
                     {
-                        float output = Predict(inputs[i]);
-                        totalError += Math.Abs(outputs[i] - output);
+                        double[] output = Predict(trainingInputs[i]);
+                        for (int k = 0; k < output.Length; ++k)
+                        {
+                            totalError += Math.Abs(trainingOutputs[i][k] - output[k]);
+                        }
                     }
-                    Output($"Epoka {epoch}, Średni błąd: {totalError / inputs.Length:F4}");
+                    Output($"Epoka {epoch}: Średni błąd = {totalError / (trainingInputs.Length * trainingOutputs[0].Length):F4}");
                 }
             }
         }
     }
+
 }

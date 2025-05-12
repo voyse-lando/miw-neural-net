@@ -12,18 +12,19 @@ namespace miw_neural_net
 
         public static void Start()
         {
-            float[][] inputs = new float[][]
+            double[][] inputs = new double[][]
             {
-                new float[] {0, 0},
-                new float[] {0, 1},
-                new float[] {1, 0},
-                new float[] {1, 1}
+                new double[] {0, 0},
+                new double[] {0, 1},
+                new double[] {1, 0},
+                new double[] {1, 1}
             };
 
-            float[] outputs = new float[] { 0, 1, 1, 0 };
+            double[][] outputs = [[0], [1], [1], [0]];
 
             // Tworzenie i trening sieci
-            NeuralNetwork nn = new NeuralNetwork(learningRate: 0.3f, beta: 1.0f);
+            NeuralNetwork nn = new NeuralNetwork(learningRate: 0.3, beta: 1.0, inputSize: 2, layers: [2, 1]);
+            //NeuralNetwork nn = new NeuralNetwork(learningRate: 0.3f, beta: 1.0f);
             Output("Rozpoczęcie treningu...");
             nn.Train(inputs, outputs, epochs: 50000);
             Output("Trening zakończony.");
@@ -32,11 +33,11 @@ namespace miw_neural_net
             Output("\nTestowanie sieci:");
             for (int i = 0; i < inputs.Length; i++)
             {
-                float prediction = nn.Predict(inputs[i]);
+                double prediction = nn.Predict(inputs[i])[0];
                 Output($"Wejście: [{inputs[i][0]}, {inputs[i][1]}], " +
                                  $"Oczekiwane: {outputs[i]}, " +
                                  $"Otrzymane: {prediction:F2}, " +
-                                 $"Błąd: {Math.Abs(outputs[i] - prediction):F2}");
+                                 $"Błąd: {Math.Abs(outputs[i][0] - prediction):F2}");
             }
         }
     }
