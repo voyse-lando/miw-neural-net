@@ -12,15 +12,21 @@ namespace miw_neural_net
 
         public static void Start()
         {
-            double[][] inputs = new double[][]
-            {
-                new double[] {0, 0},
-                new double[] {0, 1},
-                new double[] {1, 0},
-                new double[] {1, 1}
-            };
+            double[][] data = InputParser.TableFromFile("./xor_nor.txt")!;
 
-            double[][] outputs = [[0, 1], [1, 0], [1, 0], [0, 0]];
+            double[][] inputs = [
+                [data[0][0], data[0][1]],
+                [data[1][0], data[1][1]],
+                [data[2][0], data[2][1]],
+                [data[3][0], data[3][1]]
+            ];
+
+            double[][] outputs = [
+                [data[0][2], data[0][3]],
+                [data[1][2], data[1][3]],
+                [data[2][2], data[2][3]],
+                [data[3][2], data[3][3]]
+            ];
 
             // Tworzenie i trening sieci
             NeuralNetwork nn = new NeuralNetwork(learningRate: 0.3, beta: 1.3, inputSize: 2, layers: [2, 2, 2]);

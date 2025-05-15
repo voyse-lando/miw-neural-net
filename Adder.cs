@@ -12,19 +12,29 @@ namespace miw_neural_net
 
         public static void Start()
         {
-            double[][] inputs = new double[][]
-            {
-                new double[] {0, 0, 0},
-                new double[] {0, 1, 0},
-                new double[] {1, 0, 0},
-                new double[] {1, 1, 0},
-                new double[] {0, 0, 1},
-                new double[] {0, 1, 1},
-                new double[] {1, 0, 1},
-                new double[] {1, 1, 1},
-            };
+            double[][] data = InputParser.TableFromFile("./sumatorek.txt")!;
 
-            double[][] outputs = [[0, 0], [1, 0], [1, 0], [0, 1], [1, 0], [0, 1], [0, 1], [1, 1]];
+            double[][] inputs = [
+                [data[0][0], data[0][1], data[0][2]],
+                [data[1][0], data[1][1], data[1][2]],
+                [data[2][0], data[2][1], data[2][2]],
+                [data[3][0], data[3][1], data[3][2]],
+                [data[4][0], data[4][1], data[4][2]],
+                [data[5][0], data[5][1], data[5][2]],
+                [data[6][0], data[6][1], data[6][2]],
+                [data[7][0], data[7][1], data[7][2]]
+            ];
+
+            double[][] outputs = [
+                [data[0][3], data[0][4]],
+                [data[1][3], data[1][4]],
+                [data[2][3], data[2][4]],
+                [data[3][3], data[3][4]],
+                [data[4][3], data[4][4]],
+                [data[5][3], data[5][4]],
+                [data[6][3], data[6][4]],
+                [data[7][3], data[7][4]]
+            ];
 
             // Tworzenie i trening sieci
             NeuralNetwork nn = new NeuralNetwork(learningRate: 0.3, beta: 1.3, inputSize: 3, layers: [3, 2, 2]);
